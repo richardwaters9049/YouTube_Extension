@@ -3,6 +3,8 @@
   window.__ytSpeedExtBridgeInstalled = true;
 
   const SOURCE = "yt-speed-ext";
+  const DEFAULT_SPEED = 1;
+  const DEFAULT_VOLUME_PERCENT = 100;
 
   const getPlayer = () => {
     const player = document.getElementById("movie_player");
@@ -80,6 +82,20 @@
     video.volume = v;
   };
 
+  const getVideoKeyFromUrl = () => {
+    try {
+      const u = new URL(location.href);
+      if (u.pathname === "/watch") return u.searchParams.get("v");
+      if (u.pathname.startsWith("/shorts/")) {
+        const id = u.pathname.split("/")[2];
+        return id || null;
+      }
+      return u.searchParams.get("v");
+    } catch {
+      return null;
+    }
+  };
+
   window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     const data = event.data;
@@ -116,9 +132,42 @@
   });
 
   let lastSent = null;
+  let lastVideoKey = getVideoKeyFromUrl();
+  let lastVideoSrc = null;
+  let resetDeadline = 0;
+
   setInterval(() => {
+    const video = getVideo();
+    const currentKey = getVideoKeyFromUrl();
+    const currentSrc = video?.currentSrc || null;
+
+    if (currentKey && currentKey !== lastVideoKey) {
+      lastVideoKey = currentKey;
+      resetDeadline = Date.now() + 6000;
+    }
+
+    if (currentSrc && currentSrc !== lastVideoSrc) {
+      lastVideoSrc = currentSrc;
+      resetDeadline = Date.now() + 6000;
+    }
+
+    const now = Date.now();
+    if (resetDeadline && now < resetDeadline) {
+      applySpeed(DEFAULT_SPEED);
+      applyVolumePercent(DEFAULT_VOLUME_PERCENT);
+    }
+
     const state = getState();
     if (!state) return;
+
+    if (
+      resetDeadline &&
+      now < resetDeadline &&
+      state.playbackRate === DEFAULT_SPEED &&
+      Math.round(Number(state.volumePercent)) === DEFAULT_VOLUME_PERCENT
+    ) {
+      resetDeadline = 0;
+    }
     const key = JSON.stringify({
       playbackRate: state.playbackRate,
       volumePercent: state.volumePercent,
@@ -130,4 +179,3 @@
     window.postMessage({ source: SOURCE, type: "STATE", state }, "*");
   }, 500);
 })();
-
