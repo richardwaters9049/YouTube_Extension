@@ -16,11 +16,12 @@ body {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
+  text-align: center;
 }
 
 h1 {
-  font-size: 14px;
-  margin-bottom: 12px;
+  font-size: 24px;
+  margin-bottom: 20px;
   opacity: 0.9;
 }
 
@@ -50,7 +51,7 @@ input[type="range"] {
   margin-top: 10px;
 }
 
-.manual input[type="number"] {
+.manual input {
   width: 90px;
   padding: 6px 8px;
   border-radius: 8px;
@@ -60,7 +61,7 @@ input[type="range"] {
   outline: none;
 }
 
-.manual input[type="number"]:focus {
+.manual input:focus {
   border-color: rgba(56, 189, 248, 0.65);
 }
 

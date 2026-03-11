@@ -15,10 +15,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const clamp = (v) => Math.min(4, Math.max(0.25, v));
 
-  const updateUI = (speed) => {
+  const updateUI = (speed, { syncManual = true } = {}) => {
     speedValue.textContent = `${speed.toFixed(2)}×`;
     slider.value = String(speed);
-    if (manualSpeed) manualSpeed.value = String(speed);
+    if (manualSpeed && syncManual) manualSpeed.value = String(speed);
 
     // subtle animation
     speedValue.style.transform = "scale(1.08)";
@@ -79,12 +79,16 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ───────── Manual input ───────── */
 
   const applyManualSpeed = () => {
-    const raw = Number(manualSpeed?.value);
-    if (!Number.isFinite(raw)) return;
+    const rawText = manualSpeed?.value?.trim();
+    if (!rawText) return;
 
-    const speed = clamp(raw);
+    const normalized = rawText.replace(",", ".");
+    const speed = Number.parseFloat(normalized);
+    if (!Number.isFinite(speed)) return;
+
     pendingSpeed = speed;
-    updateUI(speed);
+    speedValue.textContent = `${rawText}×`;
+    if (speed >= 0.25 && speed <= 4) slider.value = String(speed);
     applySpeed(speed);
   };
 
@@ -95,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resetSpeed?.addEventListener("click", () => {
     pendingSpeed = 1;
-    updateUI(1);
+    updateUI(1, { syncManual: true });
     applySpeed(1);
   });
 
