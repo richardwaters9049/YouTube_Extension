@@ -2,6 +2,8 @@
 
 A small Manifest V3 browser extension that lets you set the playback speed of the current YouTube tab.
 
+![Extension popup](assets/extension-popup.png)
+
 The loadable extension lives in `extension/` (that’s the folder you point Arc at when you “Load unpacked”).
 
 ## Features
