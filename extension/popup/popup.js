@@ -106,6 +106,15 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ───────── Keyboard shortcuts ───────── */
 
   window.addEventListener("keydown", (e) => {
+    const target = e.target;
+    const isTypingContext =
+      (target instanceof HTMLInputElement &&
+        !["button", "checkbox", "radio", "range"].includes(target.type)) ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable);
+
+    if (isTypingContext) return;
+
     let speed = Number(slider.value);
 
     if (e.key === "ArrowRight") speed += 0.05;
