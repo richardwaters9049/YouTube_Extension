@@ -17,14 +17,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let pendingSpeed = 1;
   let pendingVolumePercent = 100;
+  let lastKnownRate = null;
+  let lastKnownVolumePercent = null;
 
   const clamp = (v) => Math.min(4, Math.max(0.25, v));
   const clampVolumePercent = (v) => Math.min(100, Math.max(0, v));
 
-  const updateUI = (speed, { syncManual = true } = {}) => {
+  const updateUI = (speed) => {
     speedValue.textContent = `${speed.toFixed(2)}×`;
     slider.value = String(speed);
-    if (manualSpeed && syncManual) manualSpeed.value = String(speed);
 
     // subtle animation
     speedValue.style.transform = "scale(1.08)";
@@ -33,37 +34,43 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 120);
   };
 
-  const applySpeed = (speed) => {
+  const withActiveTab = (cb) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tabId = tabs?.[0]?.id;
       if (!tabId) return;
+      cb(tabId);
+    });
+  };
 
-      chrome.scripting.executeScript({
-        target: { tabId },
-        func: (s) => {
-          const video = document.querySelector("video");
-          if (video) video.playbackRate = s;
-        },
-        args: [speed],
+  const getState = () =>
+    new Promise((resolve) => {
+      withActiveTab((tabId) => {
+        chrome.tabs.sendMessage(tabId, { type: "GET_STATE" }, (resp) => {
+          if (!chrome.runtime.lastError) return resolve(resp ?? null);
+
+          chrome.runtime.sendMessage(
+            { type: "GET_LAST_STATE", tabId },
+            (cached) => {
+              resolve(cached ?? null);
+            }
+          );
+        });
       });
+    });
+
+  const applySpeed = (speed) => {
+    withActiveTab((tabId) => {
+      chrome.tabs.sendMessage(tabId, { type: "SET_SPEED", speed }, () => {});
     });
   };
 
   const applyVolume = (volumePercent) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tabId = tabs?.[0]?.id;
-      if (!tabId) return;
-
-      const volume = volumePercent / 100;
-
-      chrome.scripting.executeScript({
-        target: { tabId },
-        func: (v) => {
-          const video = document.querySelector("video");
-          if (video) video.volume = v;
-        },
-        args: [volume],
-      });
+    withActiveTab((tabId) => {
+      chrome.tabs.sendMessage(
+        tabId,
+        { type: "SET_VOLUME", volumePercent },
+        () => {}
+      );
     });
   };
 
@@ -73,7 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (volumeValue && volumeSlider) {
     volumeValue.textContent = "100%";
     volumeSlider.value = "100";
-    if (manualVolume) manualVolume.value = "100";
   }
 
   /* ───────── Slider behavior ───────── */
@@ -81,7 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
   slider.addEventListener("input", () => {
     pendingSpeed = Number(slider.value);
     speedValue.textContent = `${pendingSpeed.toFixed(2)}×`;
-    if (manualSpeed) manualSpeed.value = String(pendingSpeed);
   });
 
   const applyOnRelease = () => {
@@ -128,23 +133,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resetSpeed?.addEventListener("click", () => {
     pendingSpeed = 1;
-    updateUI(1, { syncManual: true });
+    updateUI(1);
     applySpeed(1);
   });
 
   /* ───────── Volume slider + input ───────── */
 
-  const updateVolumeUI = (percent, { syncManual = true } = {}) => {
+  const updateVolumeUI = (percent) => {
     if (!volumeValue || !volumeSlider) return;
     volumeValue.textContent = `${percent}%`;
     volumeSlider.value = String(percent);
-    if (manualVolume && syncManual) manualVolume.value = String(percent);
   };
 
   volumeSlider?.addEventListener("input", () => {
     pendingVolumePercent = Number(volumeSlider.value);
     if (volumeValue) volumeValue.textContent = `${pendingVolumePercent}%`;
-    if (manualVolume) manualVolume.value = String(pendingVolumePercent);
   });
 
   const applyVolumeOnRelease = () => {
@@ -179,6 +182,45 @@ document.addEventListener("DOMContentLoaded", () => {
   manualVolume?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") applyManualVolume();
   });
+
+  /* ───────── Sync from page state ───────── */
+
+  const isUserInteracting = () => {
+    const target = document.activeElement;
+    return (
+      (target instanceof HTMLInputElement &&
+        !["button", "checkbox", "radio"].includes(target.type)) ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    );
+  };
+
+  const syncFromState = async () => {
+    if (isUserInteracting()) return;
+
+    const state = await getState();
+    if (!state) return;
+
+    const rate = Number(state.playbackRate);
+    if (Number.isFinite(rate) && rate !== lastKnownRate) {
+      lastKnownRate = rate;
+      speedValue.textContent = `${rate.toFixed(2)}×`;
+      slider.value = String(rate);
+    }
+
+    const vol = Number(state.volumePercent);
+    if (Number.isFinite(vol)) {
+      const rounded = Math.round(vol);
+      if (rounded !== lastKnownVolumePercent) {
+        lastKnownVolumePercent = rounded;
+        updateVolumeUI(rounded);
+      }
+    }
+  };
+
+  void syncFromState();
+  const syncInterval = setInterval(syncFromState, 750);
+  window.addEventListener("beforeunload", () => clearInterval(syncInterval));
 
   /* ───────── Keyboard shortcuts ───────── */
 
