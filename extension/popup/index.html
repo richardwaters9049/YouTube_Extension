@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>YouTube Speed</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="card">
+      <h1>YouTube Speed</h1>
+
+      <div id="speedValue" class="speed">1.00×</div>
+
+      <input
+        id="slider"
+        type="range"
+        min="0.25"
+        max="4"
+        step="0.05"
+        value="1"
+      />
+
+      <div class="presets">
+        <button data-speed="0.5">0.5×</button>
+        <button data-speed="1">1×</button>
+        <button data-speed="1.5">1.5×</button>
+        <button data-speed="2">2×</button>
+      </div>
+
+      <div class="manual">
+        <input
+          id="manualSpeed"
+          type="number"
+          inputmode="decimal"
+          min="0.25"
+          max="4"
+          step="0.05"
+          value="1"
+        />
+        <button id="applyManual" type="button">Apply</button>
+        <button id="resetSpeed" type="button" class="secondary">Reset</button>
+      </div>
+
+      <p class="hint">← → adjust • 1–4 presets • Enter to apply</p>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
