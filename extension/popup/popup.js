@@ -34,24 +34,54 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 120);
   };
 
-  const withActiveTab = (cb) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tabId = tabs?.[0]?.id;
-      if (!tabId) return;
-      cb(tabId);
+  const getActiveTab = () =>
+    new Promise((resolve) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        resolve(tabs?.[0] ?? null);
+      });
     });
-  };
+
+  const execOnTab = (tabId, func, args = []) =>
+    new Promise((resolve) => {
+      chrome.scripting.executeScript(
+        { target: { tabId }, func, args },
+        (results) => {
+          if (chrome.runtime.lastError) return resolve(null);
+          resolve(results?.[0]?.result ?? null);
+        }
+      );
+    });
 
   const getState = () =>
     new Promise((resolve) => {
-      withActiveTab((tabId) => {
+      getActiveTab().then((tab) => {
+        const tabId = tab?.id;
+        if (!tabId) return resolve(null);
+
         chrome.tabs.sendMessage(tabId, { type: "GET_STATE" }, (resp) => {
           if (!chrome.runtime.lastError) return resolve(resp ?? null);
 
           chrome.runtime.sendMessage(
             { type: "GET_LAST_STATE", tabId },
             (cached) => {
-              resolve(cached ?? null);
+              if (cached != null) return resolve(cached);
+
+              execOnTab(
+                tabId,
+                () => {
+                  const video =
+                    document.querySelector("video.html5-main-video") ||
+                    document.querySelector("video");
+                  if (!video) return null;
+                  return {
+                    playbackRate: video.playbackRate,
+                    volumePercent: video.volume * 100,
+                    muted: video.muted,
+                    url: location.href,
+                  };
+                },
+                []
+              ).then(resolve);
             }
           );
         });
@@ -59,17 +89,51 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
   const applySpeed = (speed) => {
-    withActiveTab((tabId) => {
-      chrome.tabs.sendMessage(tabId, { type: "SET_SPEED", speed }, () => {});
+    getActiveTab().then((tab) => {
+      const tabId = tab?.id;
+      if (!tabId) return;
+
+      chrome.tabs.sendMessage(tabId, { type: "SET_SPEED", speed }, () => {
+        if (!chrome.runtime.lastError) return;
+
+        void execOnTab(
+          tabId,
+          (s) => {
+            const video =
+              document.querySelector("video.html5-main-video") ||
+              document.querySelector("video");
+            if (video) video.playbackRate = s;
+          },
+          [speed]
+        );
+      });
     });
   };
 
   const applyVolume = (volumePercent) => {
-    withActiveTab((tabId) => {
+    getActiveTab().then((tab) => {
+      const tabId = tab?.id;
+      if (!tabId) return;
+
       chrome.tabs.sendMessage(
         tabId,
         { type: "SET_VOLUME", volumePercent },
-        () => {}
+        () => {
+          if (!chrome.runtime.lastError) return;
+
+          void execOnTab(
+            tabId,
+            (p) => {
+              const video =
+                document.querySelector("video.html5-main-video") ||
+                document.querySelector("video");
+              if (!video) return;
+              const v = Math.min(1, Math.max(0, p / 100));
+              video.volume = v;
+            },
+            [volumePercent]
+          );
+        }
       );
     });
   };
