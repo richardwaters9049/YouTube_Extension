@@ -1,4 +1,8 @@
+<div align="center">
+
 # YouTube Speed Controller (Arc / Chromium Extension)
+
+</div>
 
 <p align="center">
   <strong>Control YouTube playback speed and volume from a compact browser popup.</strong>
@@ -14,7 +18,7 @@ The loadable extension lives in `extension/` (that’s the folder you point Arc 
 
 **Aim:** Make it fast to adjust a YouTube tab’s playback speed and volume without digging through YouTube’s menus.
 
-**Expected output:** When you open the popup on a YouTube tab, it shows the **current** playback speed and volume for that tab and lets you update both. If you change speed/volume using YouTube controls (or shortcuts), the popup reflects the new values while it’s open.
+**Expected output:** When you open the pop-up on a YouTube tab, it shows the **current** playback speed and volume for that tab and lets you update both. If you change speed/volume using YouTube controls (or shortcuts), the pop-up reflects the new values while it’s open.
 
 ## Table of contents
 
@@ -78,7 +82,7 @@ After any code/icon changes, come back to `arc://extensions` and hit **Reload** 
   - `popup/` — the popup UI shown when you click the extension icon
   - `icons/` — toolbar/extension icons referenced by the manifest
 - `frontend/`
-  - A Next.js app (static export) that can be used to prototype a popup UI.
+  - A Next.js app (static export) that can be used to prototype a pop-up UI.
   - This repo currently loads the popup from `extension/popup/` (not directly from `frontend/`).
 
 ## Developing / customizing
@@ -102,9 +106,9 @@ Typical workflow:
 3. Copy the exported files from `frontend/out/` into `extension/popup/`
 4. Reload the extension in `arc://extensions`
 
-## Notes / limitations
+## Notes/limitations
 
 - The extension targets YouTube pages (`https://www.youtube.com/*`).
-- The popup only controls the **active** YouTube tab (it won’t change other open YouTube tabs).
+- The pop-up only controls the **active** YouTube tab (it won’t change other open YouTube tabs).
 - Slider speeds are clamped to **0.25× → 4×**; manual input applies the numeric value you type.
 - Volume is expressed as a percentage (0–100%).
