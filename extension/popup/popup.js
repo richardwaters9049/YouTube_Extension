@@ -64,7 +64,10 @@ document.addEventListener("DOMContentLoaded", () => {
           chrome.runtime.sendMessage(
             { type: "GET_LAST_STATE", tabId },
             (cached) => {
-              if (cached != null) return resolve(cached);
+              // Must read lastError to avoid "Unchecked runtime.lastError" noise
+              // when the background/service worker isn't available yet.
+              const err = chrome.runtime.lastError;
+              if (!err && cached != null) return resolve(cached);
 
               execOnTab(
                 tabId,
