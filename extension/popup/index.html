@@ -40,6 +40,25 @@
         <button id="resetSpeed" type="button" class="secondary">Reset</button>
       </div>
 
+      <div class="divider"></div>
+
+      <h2 class="section-title">Volume</h2>
+
+      <div id="volumeValue" class="value">100%</div>
+
+      <input id="volumeSlider" type="range" min="0" max="100" step="1" value="100" />
+
+      <div class="manual">
+        <input
+          id="manualVolume"
+          type="text"
+          inputmode="decimal"
+          value="100"
+          placeholder="e.g. 80"
+        />
+        <button id="applyVolume" type="button">Apply</button>
+      </div>
+
       <p class="hint">← → adjust • 1–4 presets • Enter to apply</p>
     </div>
 
