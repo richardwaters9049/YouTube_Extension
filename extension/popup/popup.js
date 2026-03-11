@@ -46,28 +46,32 @@ document.addEventListener("DOMContentLoaded", () => {
       chrome.scripting.executeScript(
         { target: { tabId }, func, args },
         (results) => {
-          if (chrome.runtime.lastError) return resolve(null);
+          const err = chrome.runtime.lastError;
+          if (err) return resolve(null);
           resolve(results?.[0]?.result ?? null);
         }
       );
     });
+
+  const isSupportedTab = (tab) => Boolean(tab?.url?.includes("youtube.com"));
 
   const getState = () =>
     new Promise((resolve) => {
       getActiveTab().then((tab) => {
         const tabId = tab?.id;
         if (!tabId) return resolve(null);
+        if (!isSupportedTab(tab)) return resolve(null);
 
         chrome.tabs.sendMessage(tabId, { type: "GET_STATE" }, (resp) => {
-          if (!chrome.runtime.lastError) return resolve(resp ?? null);
+          const err = chrome.runtime.lastError;
+          if (!err) return resolve(resp ?? null);
 
           chrome.runtime.sendMessage(
             { type: "GET_LAST_STATE", tabId },
             (cached) => {
-              // Must read lastError to avoid "Unchecked runtime.lastError" noise
-              // when the background/service worker isn't available yet.
-              const err = chrome.runtime.lastError;
-              if (!err && cached != null) return resolve(cached);
+              // Must read lastError to avoid "Unchecked runtime.lastError" noise.
+              const cachedErr = chrome.runtime.lastError;
+              if (!cachedErr && cached != null) return resolve(cached);
 
               execOnTab(
                 tabId,
@@ -95,9 +99,11 @@ document.addEventListener("DOMContentLoaded", () => {
     getActiveTab().then((tab) => {
       const tabId = tab?.id;
       if (!tabId) return;
+      if (!isSupportedTab(tab)) return;
 
       chrome.tabs.sendMessage(tabId, { type: "SET_SPEED", speed }, () => {
-        if (!chrome.runtime.lastError) return;
+        const err = chrome.runtime.lastError;
+        if (!err) return;
 
         void execOnTab(
           tabId,
@@ -117,12 +123,14 @@ document.addEventListener("DOMContentLoaded", () => {
     getActiveTab().then((tab) => {
       const tabId = tab?.id;
       if (!tabId) return;
+      if (!isSupportedTab(tab)) return;
 
       chrome.tabs.sendMessage(
         tabId,
         { type: "SET_VOLUME", volumePercent },
         () => {
-          if (!chrome.runtime.lastError) return;
+          const err = chrome.runtime.lastError;
+          if (!err) return;
 
           void execOnTab(
             tabId,
