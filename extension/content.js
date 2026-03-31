@@ -1,6 +1,28 @@
 const SOURCE = "yt-speed-ext";
 
-chrome.runtime.sendMessage({ type: "INJECT_MAIN" });
+const getRuntime = () => {
+  try {
+    return chrome?.runtime?.id ? chrome.runtime : null;
+  } catch {
+    return null;
+  }
+};
+
+const safeSendRuntimeMessage = (message) => {
+  const runtime = getRuntime();
+  if (!runtime) return false;
+
+  try {
+    runtime.sendMessage(message, () => {
+      void chrome.runtime?.lastError;
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+safeSendRuntimeMessage({ type: "INJECT_MAIN" });
 
 let cachedState = null;
 let requestCounter = 0;
@@ -32,7 +54,7 @@ window.addEventListener("message", (event) => {
 
   if (data.type === "STATE") {
     cachedState = data.state ?? null;
-    if (cachedState) chrome.runtime.sendMessage({ type: "YT_STATE", state: cachedState });
+    if (cachedState) safeSendRuntimeMessage({ type: "YT_STATE", state: cachedState });
     return;
   }
 
