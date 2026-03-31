@@ -49,8 +49,12 @@
     const playbackRate =
       safeCall(player, "getPlaybackRate") ?? video?.playbackRate ?? null;
 
+    const playerVolumePercent = safeCall(player, "getVolume");
+    const mediaVolumePercent = video ? video.volume * 100 : null;
     const volumePercent =
-      safeCall(player, "getVolume") ?? (video ? video.volume * 100 : null);
+      Number.isFinite(playerVolumePercent) && Number.isFinite(mediaVolumePercent)
+        ? Math.min(playerVolumePercent, mediaVolumePercent)
+        : playerVolumePercent ?? mediaVolumePercent ?? null;
 
     const muted = safeCall(player, "isMuted") ?? video?.muted ?? null;
 
@@ -64,8 +68,9 @@
 
   const applySpeed = (speed) => {
     const player = getPlayer();
-    const did = safeCall(player, "setPlaybackRate", speed);
-    if (did !== undefined) return;
+    if (player && typeof player.setPlaybackRate === "function") {
+      player.setPlaybackRate(speed);
+    }
 
     const video = getVideo();
     if (video) video.playbackRate = speed;
@@ -73,12 +78,19 @@
 
   const applyVolumePercent = (volumePercent) => {
     const player = getPlayer();
-    const did = safeCall(player, "setVolume", volumePercent);
-    if (did !== undefined) return;
+    const clampedPercent = Math.min(100, Math.max(0, volumePercent));
+    const shouldUsePlayerVolumeApi =
+      clampedPercent === 0 || clampedPercent >= 5;
+
+    // YouTube's player API tends to snap tiny values up to 5, so for 1-4%
+    // we treat the media element as the source of truth instead.
+    if (shouldUsePlayerVolumeApi && player && typeof player.setVolume === "function") {
+      player.setVolume(clampedPercent);
+    }
 
     const video = getVideo();
     if (!video) return;
-    const v = Math.min(1, Math.max(0, volumePercent / 100));
+    const v = Math.min(1, Math.max(0, clampedPercent / 100));
     video.volume = v;
   };
 
@@ -113,6 +125,7 @@
     }
 
     if (type === "SET_SPEED") {
+      cancelReset();
       applySpeed(data.speed);
       window.postMessage(
         { source: SOURCE, type: "STATE_RESPONSE", requestId, state: getState() },
@@ -122,6 +135,7 @@
     }
 
     if (type === "SET_VOLUME") {
+      cancelReset();
       applyVolumePercent(data.volumePercent);
       window.postMessage(
         { source: SOURCE, type: "STATE_RESPONSE", requestId, state: getState() },
@@ -134,7 +148,18 @@
   let lastSent = null;
   let lastVideoKey = getVideoKeyFromUrl();
   let lastVideoSrc = null;
-  let resetDeadline = 0;
+  let pendingReset = null;
+
+  const queueReset = () => {
+    pendingReset = {
+      remainingAttempts: 6,
+      nextAttemptAt: Date.now(),
+    };
+  };
+
+  const cancelReset = () => {
+    pendingReset = null;
+  };
 
   setInterval(() => {
     const video = getVideo();
@@ -143,30 +168,34 @@
 
     if (currentKey && currentKey !== lastVideoKey) {
       lastVideoKey = currentKey;
-      resetDeadline = Date.now() + 6000;
+      queueReset();
     }
 
     if (currentSrc && currentSrc !== lastVideoSrc) {
       lastVideoSrc = currentSrc;
-      resetDeadline = Date.now() + 6000;
+      queueReset();
     }
 
     const now = Date.now();
-    if (resetDeadline && now < resetDeadline) {
+    if (pendingReset && now >= pendingReset.nextAttemptAt) {
       applySpeed(DEFAULT_SPEED);
       applyVolumePercent(DEFAULT_VOLUME_PERCENT);
+      pendingReset.remainingAttempts -= 1;
+      pendingReset.nextAttemptAt = now + 400;
+      if (pendingReset.remainingAttempts <= 0) {
+        cancelReset();
+      }
     }
 
     const state = getState();
     if (!state) return;
 
     if (
-      resetDeadline &&
-      now < resetDeadline &&
+      pendingReset &&
       state.playbackRate === DEFAULT_SPEED &&
       Math.round(Number(state.volumePercent)) === DEFAULT_VOLUME_PERCENT
     ) {
-      resetDeadline = 0;
+      cancelReset();
     }
     const key = JSON.stringify({
       playbackRate: state.playbackRate,
