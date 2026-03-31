@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastKnownRate = null;
   let lastKnownVolumePercent = null;
   let suppressSyncUntil = 0;
-  let draftManualVolume = "100";
+  let draftManualVolume = "";
   let draftManualSpeed = "1";
 
   const clamp = (v) => Math.min(4, Math.max(0.25, v));
@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (volumeValue && volumeSlider) {
     volumeValue.textContent = "100%";
     volumeSlider.value = "100";
-    if (manualVolume) manualVolume.value = "100";
+    if (manualVolume) manualVolume.value = "";
   }
 
   /* ───────── Slider behavior ───────── */
@@ -236,16 +236,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!volumeValue || !volumeSlider) return;
     volumeValue.textContent = `${percent}%`;
     volumeSlider.value = String(percent);
-    draftManualVolume = String(percent);
-    if (manualVolume) manualVolume.value = draftManualVolume;
   };
 
   volumeSlider?.addEventListener("input", () => {
     suppressSync();
     pendingVolumePercent = Number(volumeSlider.value);
     if (volumeValue) volumeValue.textContent = `${pendingVolumePercent}%`;
-    draftManualVolume = String(pendingVolumePercent);
-    if (manualVolume) manualVolume.value = draftManualVolume;
   });
 
   const applyVolumeOnRelease = () => {
@@ -274,8 +270,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (percent >= 0 && percent <= 100 && volumeSlider) {
       volumeSlider.value = String(percent);
     }
-    draftManualVolume = String(percent);
-    if (manualVolume) manualVolume.value = draftManualVolume;
+    draftManualVolume = rawText;
+    if (manualVolume) manualVolume.value = rawText;
     applyVolume(percent);
   };
 
