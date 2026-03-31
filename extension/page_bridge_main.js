@@ -136,6 +136,7 @@
 
     if (type === "SET_VOLUME") {
       cancelReset();
+      queueUserVolume(data.volumePercent);
       applyVolumePercent(data.volumePercent);
       window.postMessage(
         { source: SOURCE, type: "STATE_RESPONSE", requestId, state: getState() },
@@ -149,8 +150,10 @@
   let lastVideoKey = getVideoKeyFromUrl();
   let lastVideoSrc = null;
   let pendingReset = null;
+  let pendingUserVolume = null;
 
   const queueReset = () => {
+    pendingUserVolume = null;
     pendingReset = {
       remainingAttempts: 6,
       nextAttemptAt: Date.now(),
@@ -159,6 +162,18 @@
 
   const cancelReset = () => {
     pendingReset = null;
+  };
+
+  const queueUserVolume = (volumePercent) => {
+    pendingUserVolume = {
+      target: Math.min(100, Math.max(0, volumePercent)),
+      remainingAttempts: 8,
+      nextAttemptAt: Date.now(),
+    };
+  };
+
+  const cancelUserVolume = () => {
+    pendingUserVolume = null;
   };
 
   setInterval(() => {
@@ -187,6 +202,15 @@
       }
     }
 
+    if (pendingUserVolume && now >= pendingUserVolume.nextAttemptAt) {
+      applyVolumePercent(pendingUserVolume.target);
+      pendingUserVolume.remainingAttempts -= 1;
+      pendingUserVolume.nextAttemptAt = now + 250;
+      if (pendingUserVolume.remainingAttempts <= 0) {
+        cancelUserVolume();
+      }
+    }
+
     const state = getState();
     if (!state) return;
 
@@ -197,6 +221,14 @@
     ) {
       cancelReset();
     }
+
+    if (
+      pendingUserVolume &&
+      Math.abs(Number(state.volumePercent) - pendingUserVolume.target) < 0.6
+    ) {
+      cancelUserVolume();
+    }
+
     const key = JSON.stringify({
       playbackRate: state.playbackRate,
       volumePercent: state.volumePercent,
