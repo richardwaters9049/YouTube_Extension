@@ -19,9 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let pendingVolumePercent = 100;
   let lastKnownRate = null;
   let lastKnownVolumePercent = null;
+  let suppressSyncUntil = 0;
 
   const clamp = (v) => Math.min(4, Math.max(0.25, v));
   const clampVolumePercent = (v) => Math.min(100, Math.max(0, v));
+  const suppressSync = (ms = 1500) => {
+    suppressSyncUntil = Date.now() + ms;
+  };
 
   const updateUI = (speed) => {
     speedValue.textContent = `${speed.toFixed(2)}×`;
@@ -160,6 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ───────── Slider behavior ───────── */
 
   slider.addEventListener("input", () => {
+    suppressSync();
     pendingSpeed = Number(slider.value);
     speedValue.textContent = `${pendingSpeed.toFixed(2)}×`;
   });
@@ -188,6 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ───────── Manual input ───────── */
 
   const applyManualSpeed = () => {
+    suppressSync();
     const rawText = manualSpeed?.value?.trim();
     if (!rawText) return;
 
@@ -222,6 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   volumeSlider?.addEventListener("input", () => {
+    suppressSync();
     pendingVolumePercent = Number(volumeSlider.value);
     if (volumeValue) volumeValue.textContent = `${pendingVolumePercent}%`;
     if (manualVolume) manualVolume.value = String(pendingVolumePercent);
@@ -238,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
   volumeSlider?.addEventListener("pointerup", applyVolumeOnRelease);
 
   const applyManualVolume = () => {
+    suppressSync();
     const rawText = manualVolume?.value?.trim();
     if (!rawText) return;
 
@@ -274,6 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const syncFromState = async () => {
+    if (Date.now() < suppressSyncUntil) return;
     if (isUserInteracting()) return;
 
     const state = await getState();
