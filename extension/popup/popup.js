@@ -20,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastKnownRate = null;
   let lastKnownVolumePercent = null;
   let suppressSyncUntil = 0;
+  let draftManualVolume = "100";
+  let draftManualSpeed = "1";
 
   const clamp = (v) => Math.min(4, Math.max(0.25, v));
   const clampVolumePercent = (v) => Math.min(100, Math.max(0, v));
@@ -30,6 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const updateUI = (speed) => {
     speedValue.textContent = `${speed.toFixed(2)}×`;
     slider.value = String(speed);
+    draftManualSpeed = String(speed);
+    if (manualSpeed) manualSpeed.value = draftManualSpeed;
 
     // subtle animation
     speedValue.style.transform = "scale(1.08)";
@@ -159,6 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (volumeValue && volumeSlider) {
     volumeValue.textContent = "100%";
     volumeSlider.value = "100";
+    if (manualVolume) manualVolume.value = "100";
   }
 
   /* ───────── Slider behavior ───────── */
@@ -194,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const applyManualSpeed = () => {
     suppressSync();
-    const rawText = manualSpeed?.value?.trim();
+    const rawText = draftManualSpeed.trim();
     if (!rawText) return;
 
     const normalized = rawText.replace(",", ".");
@@ -211,7 +216,10 @@ document.addEventListener("DOMContentLoaded", () => {
   applyManual?.addEventListener("mousedown", () => suppressSync());
   applyManual?.addEventListener("pointerdown", () => suppressSync());
   manualSpeed?.addEventListener("focus", () => suppressSync(3000));
-  manualSpeed?.addEventListener("input", () => suppressSync(3000));
+  manualSpeed?.addEventListener("input", () => {
+    draftManualSpeed = manualSpeed.value;
+    suppressSync(3000);
+  });
   manualSpeed?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") applyManualSpeed();
   });
@@ -228,14 +236,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!volumeValue || !volumeSlider) return;
     volumeValue.textContent = `${percent}%`;
     volumeSlider.value = String(percent);
-    if (manualVolume) manualVolume.value = String(percent);
+    draftManualVolume = String(percent);
+    if (manualVolume) manualVolume.value = draftManualVolume;
   };
 
   volumeSlider?.addEventListener("input", () => {
     suppressSync();
     pendingVolumePercent = Number(volumeSlider.value);
     if (volumeValue) volumeValue.textContent = `${pendingVolumePercent}%`;
-    if (manualVolume) manualVolume.value = String(pendingVolumePercent);
+    draftManualVolume = String(pendingVolumePercent);
+    if (manualVolume) manualVolume.value = draftManualVolume;
   });
 
   const applyVolumeOnRelease = () => {
@@ -250,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const applyManualVolume = () => {
     suppressSync();
-    const rawText = manualVolume?.value?.trim();
+    const rawText = draftManualVolume.trim();
     if (!rawText) return;
 
     const normalized = rawText.replace("%", "").trim().replace(",", ".");
@@ -264,7 +274,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (percent >= 0 && percent <= 100 && volumeSlider) {
       volumeSlider.value = String(percent);
     }
-    if (manualVolume) manualVolume.value = String(percent);
+    draftManualVolume = String(percent);
+    if (manualVolume) manualVolume.value = draftManualVolume;
     applyVolume(percent);
   };
 
@@ -272,7 +283,10 @@ document.addEventListener("DOMContentLoaded", () => {
   applyVolumeBtn?.addEventListener("mousedown", () => suppressSync());
   applyVolumeBtn?.addEventListener("pointerdown", () => suppressSync());
   manualVolume?.addEventListener("focus", () => suppressSync(3000));
-  manualVolume?.addEventListener("input", () => suppressSync(3000));
+  manualVolume?.addEventListener("input", () => {
+    draftManualVolume = manualVolume.value;
+    suppressSync(3000);
+  });
   manualVolume?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") applyManualVolume();
   });
