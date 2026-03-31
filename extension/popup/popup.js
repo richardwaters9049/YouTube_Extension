@@ -208,6 +208,10 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   applyManual?.addEventListener("click", applyManualSpeed);
+  applyManual?.addEventListener("mousedown", () => suppressSync());
+  applyManual?.addEventListener("pointerdown", () => suppressSync());
+  manualSpeed?.addEventListener("focus", () => suppressSync(3000));
+  manualSpeed?.addEventListener("input", () => suppressSync(3000));
   manualSpeed?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") applyManualSpeed();
   });
@@ -265,6 +269,10 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   applyVolumeBtn?.addEventListener("click", applyManualVolume);
+  applyVolumeBtn?.addEventListener("mousedown", () => suppressSync());
+  applyVolumeBtn?.addEventListener("pointerdown", () => suppressSync());
+  manualVolume?.addEventListener("focus", () => suppressSync(3000));
+  manualVolume?.addEventListener("input", () => suppressSync(3000));
   manualVolume?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") applyManualVolume();
   });
