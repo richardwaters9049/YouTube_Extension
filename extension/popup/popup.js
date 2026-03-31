@@ -218,11 +218,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!volumeValue || !volumeSlider) return;
     volumeValue.textContent = `${percent}%`;
     volumeSlider.value = String(percent);
+    if (manualVolume) manualVolume.value = String(percent);
   };
 
   volumeSlider?.addEventListener("input", () => {
     pendingVolumePercent = Number(volumeSlider.value);
     if (volumeValue) volumeValue.textContent = `${pendingVolumePercent}%`;
+    if (manualVolume) manualVolume.value = String(pendingVolumePercent);
   });
 
   const applyVolumeOnRelease = () => {
@@ -250,6 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (percent >= 0 && percent <= 100 && volumeSlider) {
       volumeSlider.value = String(percent);
     }
+    if (manualVolume) manualVolume.value = String(percent);
     applyVolume(percent);
   };
 
