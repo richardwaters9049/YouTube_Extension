@@ -198,9 +198,12 @@
   };
 
   const queueUserVolume = (volumePercent) => {
+    const target = Math.min(100, Math.max(0, volumePercent));
+    const isFractionalTarget = hasFractionalPercent(target);
     pendingUserVolume = {
-      target: Math.min(100, Math.max(0, volumePercent)),
-      remainingAttempts: 8,
+      target,
+      isFractionalTarget,
+      remainingAttempts: isFractionalTarget ? 60 : 8,
       nextAttemptAt: Date.now(),
     };
   };
@@ -250,7 +253,8 @@
 
     if (
       pendingUserVolume &&
-      Math.abs(Number(state.volumePercent) - pendingUserVolume.target) < 0.6
+      Math.abs(Number(state.volumePercent) - pendingUserVolume.target) < 0.6 &&
+      !pendingUserVolume.isFractionalTarget
     ) {
       cancelUserVolume();
     }
