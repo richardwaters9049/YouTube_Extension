@@ -133,6 +133,15 @@
     }
   };
 
+  const getVideoIdentity = () => {
+    const player = getPlayer();
+    const videoData = safeCall(player, "getVideoData");
+    const playerVideoId =
+      videoData && typeof videoData === "object" ? videoData.video_id : null;
+
+    return playerVideoId || getVideoKeyFromUrl() || null;
+  };
+
   window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     const data = event.data;
@@ -172,8 +181,7 @@
   });
 
   let lastSent = null;
-  let lastVideoKey = getVideoKeyFromUrl();
-  let lastVideoSrc = null;
+  let lastVideoIdentity = getVideoIdentity();
   let pendingReset = null;
   let pendingUserVolume = null;
 
@@ -202,17 +210,10 @@
   };
 
   setInterval(() => {
-    const video = getVideo();
-    const currentKey = getVideoKeyFromUrl();
-    const currentSrc = video?.currentSrc || null;
+    const currentVideoIdentity = getVideoIdentity();
 
-    if (currentKey && currentKey !== lastVideoKey) {
-      lastVideoKey = currentKey;
-      queueReset();
-    }
-
-    if (currentSrc && currentSrc !== lastVideoSrc) {
-      lastVideoSrc = currentSrc;
+    if (currentVideoIdentity && currentVideoIdentity !== lastVideoIdentity) {
+      lastVideoIdentity = currentVideoIdentity;
       queueReset();
     }
 
