@@ -57,6 +57,9 @@
     return rawPlayerVolume;
   };
 
+  const hasFractionalPercent = (value) =>
+    Number.isFinite(value) && Math.abs(value - Math.round(value)) > 0.001;
+
   const getState = () => {
     const player = getPlayer();
     const video = getVideo();
@@ -71,9 +74,11 @@
       mediaVolumePercent
     );
     const volumePercent =
-      Number.isFinite(playerVolumePercent) && Number.isFinite(mediaVolumePercent)
-        ? Math.min(playerVolumePercent, mediaVolumePercent)
-        : playerVolumePercent ?? mediaVolumePercent ?? null;
+      hasFractionalPercent(mediaVolumePercent)
+        ? mediaVolumePercent
+        : Number.isFinite(playerVolumePercent) && Number.isFinite(mediaVolumePercent)
+          ? Math.min(playerVolumePercent, mediaVolumePercent)
+          : playerVolumePercent ?? mediaVolumePercent ?? null;
 
     const muted = safeCall(player, "isMuted") ?? video?.muted ?? null;
 
@@ -99,7 +104,8 @@
     const player = getPlayer();
     const clampedPercent = Math.min(100, Math.max(0, volumePercent));
     const shouldUsePlayerVolumeApi =
-      clampedPercent === 0 || clampedPercent >= 5;
+      !hasFractionalPercent(clampedPercent) &&
+      (clampedPercent === 0 || clampedPercent >= 5);
 
     // YouTube's player API tends to snap tiny values up to 5, so for 1-4%
     // we treat the media element as the source of truth instead.
