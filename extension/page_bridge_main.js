@@ -41,6 +41,22 @@
     }
   };
 
+  const normalizePlayerVolumePercent = (rawPlayerVolume, mediaVolumePercent) => {
+    if (!Number.isFinite(rawPlayerVolume)) return null;
+
+    // Some player methods report 0-1 while the media element uses 0-100%.
+    if (
+      rawPlayerVolume >= 0 &&
+      rawPlayerVolume <= 1 &&
+      Number.isFinite(mediaVolumePercent) &&
+      mediaVolumePercent > 1.5
+    ) {
+      return rawPlayerVolume * 100;
+    }
+
+    return rawPlayerVolume;
+  };
+
   const getState = () => {
     const player = getPlayer();
     const video = getVideo();
@@ -49,8 +65,11 @@
     const playbackRate =
       safeCall(player, "getPlaybackRate") ?? video?.playbackRate ?? null;
 
-    const playerVolumePercent = safeCall(player, "getVolume");
     const mediaVolumePercent = video ? video.volume * 100 : null;
+    const playerVolumePercent = normalizePlayerVolumePercent(
+      safeCall(player, "getVolume"),
+      mediaVolumePercent
+    );
     const volumePercent =
       Number.isFinite(playerVolumePercent) && Number.isFinite(mediaVolumePercent)
         ? Math.min(playerVolumePercent, mediaVolumePercent)
