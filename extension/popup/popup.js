@@ -25,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const clamp = (v) => Math.min(4, Math.max(0.25, v));
   const clampVolumePercent = (v) => Math.min(100, Math.max(0, v));
+  const formatVolumePercent = (value) =>
+    Number.isInteger(value) ? String(value) : value.toFixed(1);
   const suppressSync = (ms = 1500) => {
     suppressSyncUntil = Date.now() + ms;
   };
@@ -234,14 +236,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const updateVolumeUI = (percent) => {
     if (!volumeValue || !volumeSlider) return;
-    volumeValue.textContent = `${percent}%`;
+    volumeValue.textContent = `${formatVolumePercent(percent)}%`;
     volumeSlider.value = String(percent);
   };
 
   volumeSlider?.addEventListener("input", () => {
     suppressSync();
     pendingVolumePercent = Number(volumeSlider.value);
-    if (volumeValue) volumeValue.textContent = `${pendingVolumePercent}%`;
+    if (volumeValue) {
+      volumeValue.textContent = `${formatVolumePercent(pendingVolumePercent)}%`;
+    }
   });
 
   const applyVolumeOnRelease = () => {
@@ -315,10 +319,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const vol = Number(state.volumePercent);
     if (Number.isFinite(vol)) {
-      const rounded = Math.round(vol);
-      if (rounded !== lastKnownVolumePercent) {
-        lastKnownVolumePercent = rounded;
-        updateVolumeUI(rounded);
+      const roundedHalf = Math.round(vol * 2) / 2;
+      if (roundedHalf !== lastKnownVolumePercent) {
+        lastKnownVolumePercent = roundedHalf;
+        updateVolumeUI(roundedHalf);
       }
     }
   };
