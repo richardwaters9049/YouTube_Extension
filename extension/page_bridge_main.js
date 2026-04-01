@@ -60,6 +60,49 @@
   const hasFractionalPercent = (value) =>
     Number.isFinite(value) && Math.abs(value - Math.round(value)) > 0.001;
 
+  const requiresExactVolumeCompensation = (value) =>
+    Number.isFinite(value) &&
+    value > 0 &&
+    value < 100 &&
+    Math.abs(value % 5) > 0.001;
+
+  let activeAudioGraph = null;
+  let activeExactVolume = null;
+
+  const ensureAudioGraph = async (video) => {
+    if (!video) return null;
+    if (activeAudioGraph?.video === video) {
+      try {
+        await activeAudioGraph.context.resume();
+      } catch {}
+      return activeAudioGraph;
+    }
+
+    try {
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextCtor) return null;
+
+      const context = new AudioContextCtor();
+      const source = context.createMediaElementSource(video);
+      const gainNode = context.createGain();
+      source.connect(gainNode);
+      gainNode.connect(context.destination);
+      await context.resume();
+
+      activeAudioGraph = { video, context, source, gainNode };
+      return activeAudioGraph;
+    } catch {
+      return null;
+    }
+  };
+
+  const clearExactVolumeCompensation = () => {
+    activeExactVolume = null;
+    if (activeAudioGraph?.gainNode) {
+      activeAudioGraph.gainNode.gain.value = 1;
+    }
+  };
+
   const getState = () => {
     const player = getPlayer();
     const video = getVideo();
@@ -73,8 +116,14 @@
       safeCall(player, "getVolume"),
       mediaVolumePercent
     );
+    const exactCompensatedVolume =
+      activeExactVolume && activeExactVolume.video === video
+        ? activeExactVolume.targetPercent
+        : null;
     const volumePercent =
-      hasFractionalPercent(mediaVolumePercent)
+      Number.isFinite(exactCompensatedVolume)
+        ? exactCompensatedVolume
+        : hasFractionalPercent(mediaVolumePercent)
         ? mediaVolumePercent
         : Number.isFinite(playerVolumePercent) && Number.isFinite(mediaVolumePercent)
           ? Math.min(playerVolumePercent, mediaVolumePercent)
@@ -100,23 +149,40 @@
     if (video) video.playbackRate = speed;
   };
 
-  const applyVolumePercent = (volumePercent) => {
+  const applyVolumePercent = async (volumePercent) => {
     const player = getPlayer();
+    const video = getVideo();
+    if (!video) return;
+
     const clampedPercent = Math.min(100, Math.max(0, volumePercent));
-    const shouldUsePlayerVolumeApi =
-      !hasFractionalPercent(clampedPercent) &&
-      (clampedPercent === 0 || clampedPercent >= 5);
+    const exactCompensationNeeded = requiresExactVolumeCompensation(clampedPercent);
+    const basePercent = exactCompensationNeeded
+      ? Math.min(100, Math.max(5, Math.ceil(clampedPercent / 5) * 5))
+      : clampedPercent;
+    const shouldUsePlayerVolumeApi = basePercent === 0 || basePercent >= 5;
 
     // YouTube's player API tends to snap tiny values up to 5, so for 1-4%
     // we treat the media element as the source of truth instead.
     if (shouldUsePlayerVolumeApi && player && typeof player.setVolume === "function") {
-      player.setVolume(clampedPercent);
+      player.setVolume(basePercent);
     }
 
-    const video = getVideo();
-    if (!video) return;
-    const v = Math.min(1, Math.max(0, clampedPercent / 100));
+    const v = Math.min(1, Math.max(0, basePercent / 100));
     video.volume = v;
+
+    if (!exactCompensationNeeded) {
+      clearExactVolumeCompensation();
+      return;
+    }
+
+    const audioGraph = await ensureAudioGraph(video);
+    if (!audioGraph) return;
+    audioGraph.gainNode.gain.value = clampedPercent / basePercent;
+    activeExactVolume = {
+      video,
+      targetPercent: clampedPercent,
+      basePercent,
+    };
   };
 
   const getVideoKeyFromUrl = () => {
@@ -187,6 +253,7 @@
 
   const queueReset = () => {
     pendingUserVolume = null;
+    clearExactVolumeCompensation();
     pendingReset = {
       remainingAttempts: 6,
       nextAttemptAt: Date.now(),
