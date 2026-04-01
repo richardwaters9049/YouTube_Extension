@@ -203,7 +203,7 @@
     pendingUserVolume = {
       target,
       isFractionalTarget,
-      remainingAttempts: isFractionalTarget ? 60 : 8,
+      remainingAttempts: isFractionalTarget ? Infinity : 8,
       nextAttemptAt: Date.now(),
     };
   };
@@ -232,11 +232,23 @@
     }
 
     if (pendingUserVolume && now >= pendingUserVolume.nextAttemptAt) {
-      applyVolumePercent(pendingUserVolume.target);
-      pendingUserVolume.remainingAttempts -= 1;
-      pendingUserVolume.nextAttemptAt = now + 250;
-      if (pendingUserVolume.remainingAttempts <= 0) {
-        cancelUserVolume();
+      const currentVolume = Number(getState()?.volumePercent);
+      const shouldReapply =
+        !Number.isFinite(currentVolume) ||
+        Math.abs(currentVolume - pendingUserVolume.target) >= 0.35;
+
+      if (shouldReapply) {
+        applyVolumePercent(pendingUserVolume.target);
+      }
+
+      if (pendingUserVolume.isFractionalTarget) {
+        pendingUserVolume.nextAttemptAt = now + 750;
+      } else {
+        pendingUserVolume.remainingAttempts -= 1;
+        pendingUserVolume.nextAttemptAt = now + 250;
+        if (pendingUserVolume.remainingAttempts <= 0) {
+          cancelUserVolume();
+        }
       }
     }
 
