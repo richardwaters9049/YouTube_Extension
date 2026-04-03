@@ -6,17 +6,60 @@
 body {
   margin: 0;
   padding: 12px;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  min-width: 294px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.32), transparent 42%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.28), transparent 38%),
+    linear-gradient(145deg, #09111f 0%, #14233f 48%, #23134b 100%);
   color: white;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 55%),
+    radial-gradient(circle at 30% 30%, rgba(14, 165, 233, 0.16), transparent 28%);
+  pointer-events: none;
+  filter: blur(14px);
+}
+
+body.is-open {
+  opacity: 1;
+  transform: scale(1);
+}
+
+body.is-closing {
+  opacity: 0;
+  transform: scale(0.98);
 }
 
 .card {
+  position: relative;
   width: 270px;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 40px rgba(4, 10, 24, 0.35);
   text-align: center;
+  animation: card-enter 220ms ease-out;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), transparent 45%);
+  pointer-events: none;
 }
 
 h1 {
@@ -57,6 +100,15 @@ h1 {
 input[type="range"] {
   width: 100%;
   accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  cursor: pointer;
 }
 
 .presets {
@@ -126,6 +178,18 @@ input[type="range"] {
 .hint {
   margin-top: 8px;
   font-size: 10px;
-  opacity: 0.5;
+  opacity: 0.6;
   text-align: center;
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

@@ -1,4 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
+  document.body.classList.add("is-open");
+  const handleCloseAnimation = () => {
+    document.body.classList.remove("is-open");
+    document.body.classList.add("is-closing");
+  };
+
+  window.addEventListener("pagehide", handleCloseAnimation);
+  window.addEventListener("blur", handleCloseAnimation);
+
   const slider = document.getElementById("slider");
   const speedValue = document.getElementById("speedValue");
   const presetButtons = document.querySelectorAll(".presets button");
@@ -347,11 +356,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (e.key === "ArrowRight") speed += 0.05;
     if (e.key === "ArrowLeft") speed -= 0.05;
-
-    if (e.key === "1") speed = 0.5;
-    if (e.key === "2") speed = 1;
-    if (e.key === "3") speed = 1.5;
-    if (e.key === "4") speed = 2;
 
     speed = clamp(speed);
 
