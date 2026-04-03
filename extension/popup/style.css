@@ -1,7 +1,9 @@
 html,
 body {
-  width: fit-content;
-  height: auto;
+  margin: 0;
+  width: max-content;
+  height: max-content;
+  background: transparent;
 }
 
 * {
@@ -10,29 +12,14 @@ body {
 }
 
 body {
-  margin: 0;
+  display: inline-flex;
+  align-items: flex-start;
   padding: 12px;
-  min-width: 294px;
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.32), transparent 42%),
-    radial-gradient(circle at top right, rgba(168, 85, 247, 0.28), transparent 38%),
-    linear-gradient(145deg, #09111f 0%, #14233f 48%, #23134b 100%);
   color: white;
   opacity: 0;
   transform: scale(0.96);
   transition: opacity 0.2s ease, transform 0.2s ease;
-  overflow: hidden;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: -20%;
-  background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 55%),
-    radial-gradient(circle at 30% 30%, rgba(14, 165, 233, 0.16), transparent 28%);
-  pointer-events: none;
-  filter: blur(14px);
+  overflow: visible;
 }
 
 body.is-open {
@@ -50,13 +37,31 @@ body.is-closing {
   width: 270px;
   padding: 16px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+  background:
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.2), transparent 34%),
+    radial-gradient(circle at top right, rgba(192, 132, 252, 0.18), transparent 32%),
+    linear-gradient(145deg, rgba(58, 88, 119, 0.96) 0%, rgba(72, 75, 126, 0.94) 52%, rgba(50, 34, 92, 0.96) 100%);
   backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 18px 40px rgba(4, 10, 24, 0.35);
   text-align: center;
   animation: card-enter 220ms ease-out;
   transition: opacity 0.16s ease, transform 0.16s ease;
+  isolation: isolate;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.24), transparent 46%),
+    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.22), transparent 44%);
+  filter: blur(16px);
+  opacity: 0.95;
+  z-index: -1;
+  pointer-events: none;
 }
 
 body.is-closing .card {
