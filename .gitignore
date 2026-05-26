@@ -5,9 +5,6 @@
 **/.next/
 frontend/out/
 
-# Local backups / temp
-frontend_embedded_git/
-
 # Env files
 .env
 .env.*
