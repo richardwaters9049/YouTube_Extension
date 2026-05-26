@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/extension-popup.png" width="420" alt="Extension popup screenshot" />
+  <img src="images/yt-screen.png" width="420" alt="Extension popup screenshot" />
 </p>
 
 The loadable extension lives in `extension/` (that’s the folder you point Arc at when you “Load unpacked”).
@@ -22,13 +22,18 @@ The loadable extension lives in `extension/` (that’s the folder you point Arc 
 
 ## Table of contents
 
-- [Features](#features)
-- [Install in Arc](#install-in-arc)
-- [How to use](#how-to-use)
-- [How it works](#how-it-works-high-level)
-- [Project structure](#project-structure)
-- [Developing / customizing](#developing--customizing)
-- [Notes / limitations](#notes--limitations)
+- [YouTube Speed Controller (Arc / Chromium Extension)](#youtube-speed-controller-arc--chromium-extension)
+  - [Project overview](#project-overview)
+  - [Table of contents](#table-of-contents)
+  - [Features](#features)
+  - [Install in Arc](#install-in-arc)
+  - [How to use](#how-to-use)
+  - [How it works (high level)](#how-it-works-high-level)
+  - [Project structure](#project-structure)
+  - [Developing / customizing](#developing--customizing)
+    - [Edit the popup UI directly](#edit-the-popup-ui-directly)
+    - [(Optional) Use the Next.js frontend](#optional-use-the-nextjs-frontend)
+  - [Notes/limitations](#noteslimitations)
 
 ## Features
 
